@@ -5,4 +5,7 @@
     <color name="surface">#F5F7FA</color>
     <color name="on_surface">#1A1F24</color>
     <color name="white">#FFFFFF</color>
+    <color name="banner_slot_bg">#FFFFFF</color>
+    <color name="banner_divider">#E0E4E8</color>
+    <color name="banner_label_bg">#99000000</color>
 </resources>

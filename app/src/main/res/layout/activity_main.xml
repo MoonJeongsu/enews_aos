@@ -71,4 +71,45 @@
                 android:text="@string/retry" />
         </LinearLayout>
     </FrameLayout>
+
+    <!-- Sibling banner slot, sized between AdMob BANNER and LARGE_BANNER. Not overlaid on WebView. -->
+    <FrameLayout
+        android:id="@+id/partnerBannerContainer"
+        android:layout_width="match_parent"
+        android:layout_height="70dp"
+        android:background="@color/banner_slot_bg"
+        android:visibility="visible">
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_gravity="top"
+            android:background="@color/banner_divider" />
+
+        <ImageButton
+            android:id="@+id/partnerBanner"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:adjustViewBounds="true"
+            android:background="?attr/selectableItemBackground"
+            android:contentDescription="@string/partner_banner_content_description"
+            android:padding="0dp"
+            android:scaleType="centerCrop"
+            android:src="@drawable/banner_dasom_01" />
+
+        <TextView
+            android:id="@+id/partnerBannerLabel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="top|start"
+            android:layout_marginStart="6dp"
+            android:layout_marginTop="4dp"
+            android:background="@color/banner_label_bg"
+            android:paddingHorizontal="5dp"
+            android:paddingVertical="1dp"
+            android:text="@string/partner_banner_ad_label"
+            android:textColor="@color/white"
+            android:textSize="9sp"
+            android:textStyle="bold" />
+    </FrameLayout>
 </LinearLayout>

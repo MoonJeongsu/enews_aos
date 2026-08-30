@@ -5,6 +5,8 @@ import android.content.Intent
 import android.graphics.Bitmap
 import android.net.Uri
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.view.View
 import android.webkit.WebChromeClient
 import android.webkit.WebResourceError
@@ -12,15 +14,35 @@ import android.webkit.WebResourceRequest
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import android.widget.ImageView
 import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.updateLayoutParams
 import kr.co.etravelnews.web.databinding.ActivityMainBinding
 
 class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
     private var lastBackPressedAt = 0L
+
+    private val bannerImages = intArrayOf(
+        R.drawable.banner_dasom_01,
+        R.drawable.banner_dasom_02,
+        R.drawable.banner_dasom_03,
+    )
+    private var bannerIndex = 0
+    private val bannerHandler = Handler(Looper.getMainLooper())
+    private val bannerRotateRunnable = object : Runnable {
+        override fun run() {
+            if (!::binding.isInitialized) return
+            bannerIndex = (bannerIndex + 1) % bannerImages.size
+            showBanner(bannerIndex)
+            bannerHandler.postDelayed(this, BANNER_ROTATE_INTERVAL_MS)
+        }
+    }
 
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -34,7 +56,9 @@ class MainActivity : AppCompatActivity() {
             statusBarBackdrop = binding.statusBarBackdrop,
         )
 
+        bannerIndex = savedInstanceState?.getInt(STATE_BANNER_INDEX, 0) ?: 0
         setupWebView()
+        setupPartnerBanner()
         binding.retryButton.setOnClickListener { reloadHome() }
         setupBackPress()
 
@@ -42,6 +66,55 @@ class MainActivity : AppCompatActivity() {
             reloadHome()
         } else {
             binding.webView.restoreState(savedInstanceState)
+        }
+    }
+
+    private fun setupPartnerBanner() {
+        showBanner(bannerIndex)
+        binding.partnerBanner.setOnClickListener {
+            openPartnerBannerUrl()
+        }
+        ViewCompat.setOnApplyWindowInsetsListener(binding.root) { view, windowInsets ->
+            val systemBars = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars())
+            val imeVisible = windowInsets.isVisible(WindowInsetsCompat.Type.ime())
+            binding.statusBarBackdrop.updateLayoutParams {
+                height = systemBars.top
+            }
+            view.setPadding(systemBars.left, 0, systemBars.right, systemBars.bottom)
+            binding.partnerBannerContainer.visibility =
+                if (imeVisible) View.GONE else View.VISIBLE
+            windowInsets
+        }
+        binding.root.requestApplyInsets()
+    }
+
+    private fun showBanner(index: Int) {
+        binding.partnerBanner.scaleType =
+            if (index == SANTORINI_BANNER_INDEX) {
+                ImageView.ScaleType.FIT_XY
+            } else {
+                ImageView.ScaleType.CENTER_CROP
+            }
+        binding.partnerBanner.setImageResource(bannerImages[index])
+    }
+
+    private fun startBannerRotation() {
+        bannerHandler.removeCallbacks(bannerRotateRunnable)
+        if (bannerImages.size > 1) {
+            bannerHandler.postDelayed(bannerRotateRunnable, BANNER_ROTATE_INTERVAL_MS)
+        }
+    }
+
+    private fun stopBannerRotation() {
+        bannerHandler.removeCallbacks(bannerRotateRunnable)
+    }
+
+    private fun openPartnerBannerUrl() {
+        val uri = Uri.parse(getString(R.string.partner_banner_url))
+        runCatching {
+            startActivity(Intent(Intent.ACTION_VIEW, uri))
+        }.onFailure {
+            Toast.makeText(this, R.string.partner_banner_open_failed, Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -165,12 +238,24 @@ class MainActivity : AppCompatActivity() {
         )
     }
 
+    override fun onStart() {
+        super.onStart()
+        startBannerRotation()
+    }
+
+    override fun onStop() {
+        stopBannerRotation()
+        super.onStop()
+    }
+
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
+        outState.putInt(STATE_BANNER_INDEX, bannerIndex)
         binding.webView.saveState(outState)
     }
 
     override fun onDestroy() {
+        stopBannerRotation()
         binding.webView.apply {
             stopLoading()
             loadUrl("about:blank")
@@ -179,5 +264,11 @@ class MainActivity : AppCompatActivity() {
             destroy()
         }
         super.onDestroy()
+    }
+
+    companion object {
+        private const val BANNER_ROTATE_INTERVAL_MS = 4_000L
+        private const val STATE_BANNER_INDEX = "state_banner_index"
+        private const val SANTORINI_BANNER_INDEX = 1
     }
 }
